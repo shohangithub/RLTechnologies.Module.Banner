@@ -1,0 +1,214 @@
+@* @namespace RLTechnologies.Module.Banner
+@inherits ModuleBase
+@inject ISettingService SettingService
+@inject IStringLocalizer<Settings> Localizer
+
+<div class="container">
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="value" HelpText="Enter a value" ResourceKey="SettingName" ResourceType="@resourceType">Name: </Label>
+            <div class="col-sm-9">
+                <input id="value" type="text" class="form-control" @bind="@_value" />
+            </div>
+    </div>
+</div>
+
+@code {
+    private string resourceType = "RLTechnologies.Module.Banner.Settings, RLTechnologies.Module.Banner.Client.Oqtane"; // for localization
+    public override string Title => "Banner Settings";
+
+    string _value;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            _value = SettingService.GetSetting(settings, "SettingName", "");
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+
+    public async Task UpdateSettings()
+    {
+        try
+        {
+            Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            SettingService.SetSetting(settings, "SettingName", _value);
+            await SettingService.UpdateModuleSettingsAsync(settings, ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+}
+ *@
+
+@using Oqtane.Modules.Controls
+@using RLTechnologies.Module.Banner.Services
+@using RLTechnologies.Module.Banner.Models
+
+@namespace RLTechnologies.Module.Banner
+@inherits ModuleBase
+@inject IBannerService BannerService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Edit> Localizer
+@* @inject IStringLocalizer<Edit> Localizer *@
+
+<form @ref="form" class="@(validated ? " was-validated" : "needs-validation" )" novalidate>
+    <div class="container">
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="name" HelpText="Enter a name" ResourceKey="Name">Name: </Label>
+            <div class="col-sm-9">
+                <input id="name" class="form-control" @bind="@_name" required />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="bannerTitle" HelpText="Enter a banner title" ResourceKey="BannerTitle"> Banner Title: </Label>
+            <div class="col-sm-9">
+                <input id="bannerTitle" class="form-control" @bind="@_bannerTitle" required />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="bannerSubTitle" HelpText="Enter a banner sub-title" ResourceKey="BannerSubTitle"> Banner Sub-title: </Label>
+            <div class="col-sm-9">
+                <input id="bannerSubTitle" class="form-control" @bind="@_bannerSubTitle" required />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="bannerText" HelpText="Enter a banner text" ResourceKey="BannerText"> Banner Text: </Label>
+            <div class="col-sm-9">
+                @* <RichTextEditor id="bannerText" class="form-control" @bind="@_bannerText" /> *@
+                <input id="bannerText" class="form-control" @bind="@_bannerText" required />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="bannerUrl" HelpText="Enter a banner url" ResourceKey="BannerUrl">@Localizer["BannerUrl"]: </Label>
+            <div class="col-sm-9">
+                <input id="bannerUrl" class="form-control" @bind="@_bannerUrl" required />
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-success" @onclick="Save">@Localizer["Save"]</button>
+    <NavLink class="btn btn-secondary" href="@NavigateUrl()">@Localizer["Cancel"]</NavLink>
+    <br /><br />
+    @* @if (PageState.Action == "Edit")
+    {
+        <AuditInfo CreatedBy="@_createdby" CreatedOn="@_createdon" ModifiedBy="@_modifiedby" ModifiedOn="@_modifiedon"></AuditInfo>
+    } *@
+</form>
+
+@code {
+    public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
+
+    public override string Actions => "Add,Edit";
+
+    public override string Title => "Manage Banner";
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" }
+    };
+
+    private ElementReference form;
+    private bool validated = false;
+
+    private int _id;
+    private string _name;
+    private string _bannerTitle;
+    private string _bannerSubTitle;
+    private string _bannerUrl;
+    private string _bannerText;
+    private string _createdby;
+    private DateTime _createdon;
+    private string _modifiedby;
+    private DateTime _modifiedon;
+    private bool _isEditing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Banner Banner = await BannerService.GetByModuleAsync(ModuleState.ModuleId);
+            if (Banner != null)
+            {
+                _isEditing = true;
+                _name = Banner.Name;
+                _bannerTitle = Banner.BannerTitle;
+                _bannerSubTitle = Banner.BannerSubTitle;
+                _bannerUrl = Banner.BannerUrl;
+                _bannerText = Banner.BannerText;
+                _createdby = Banner.CreatedBy;
+                _createdon = Banner.CreatedOn;
+                _modifiedby = Banner.ModifiedBy;
+                _modifiedon = Banner.ModifiedOn;
+            }
+            else
+            {
+                _name = "Banner Name";
+                _bannerTitle = "Banner Title";
+                _bannerSubTitle = "Banner Sub-title";
+                _bannerUrl = "Banner Url";
+                _bannerText = "Banner Text";
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading Banner {BannerId} {Error}", _id, ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            validated = true;
+            var interop = new Oqtane.UI.Interop(JSRuntime);
+            if (await interop.FormValid(form))
+            {
+                if (!_isEditing)
+                {
+                    Banner Banner = new Banner();
+                    Banner.ModuleId = ModuleState.ModuleId;
+                    Banner.Name = _name;
+                    Banner.BannerTitle = _bannerTitle;
+                    Banner.BannerSubTitle = _bannerSubTitle;
+                    Banner.BannerUrl = _bannerUrl;
+                    Banner.BannerText = _bannerText;
+                    Banner = await BannerService.AddBannerAsync(Banner);
+                    await logger.LogInformation("Banner Added {Banner}", Banner);
+                }
+                else
+                {
+                    Banner Banner = await BannerService.GetByModuleAsync(ModuleState.ModuleId);
+                    Banner.Name = _name;
+                    Banner.BannerTitle = _bannerTitle;
+                    Banner.BannerSubTitle = _bannerSubTitle;
+                    Banner.BannerUrl = _bannerUrl;
+                    Banner.BannerText = _bannerText;
+                    await BannerService.UpdateBannerAsync(Banner);
+                    await logger.LogInformation("Banner Updated {Banner}", Banner);
+                }
+                NavigationManager.NavigateTo(NavigateUrl());
+            }
+            else
+            {
+                AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Saving Banner {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
+        }
+    }
+}
+

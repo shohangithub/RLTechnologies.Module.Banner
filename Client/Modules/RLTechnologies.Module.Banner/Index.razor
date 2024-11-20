@@ -1,0 +1,141 @@
+@using RLTechnologies.Module.Banner.Services
+@using RLTechnologies.Module.Banner.Models
+
+@namespace RLTechnologies.Module.Banner
+@inherits ModuleBase
+@inject IBannerService BannerService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Index> Localizer
+@* 
+@if (_Banners == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add Banner" ResourceKey="Add" />
+    <br />
+    <br />
+    @if (@_Banners.Count != 0)
+    {
+        <Pager Items="@_Banners">
+            <Header>
+                <th style="width: 1px;">&nbsp;</th>
+                <th style="width: 1px;">&nbsp;</th>
+                <th>@Localizer["Name"]</th>
+            </Header>
+            <Row>
+                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.BannerId.ToString())" ResourceKey="Edit"  /></td>
+                <td><ActionDialog Header="Delete Banner" Message="Are You Sure You Wish To Delete This Banner?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.BannerId.ToString()" /></td>
+                <td>@context.Name</td>
+            </Row>
+        </Pager>
+    }
+    else
+    {
+        <p>@Localizer["Message.DisplayNone"]</p>
+    }
+}
+
+
+ *@
+
+@if (_Banner == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <section>
+        <div class="hero container">
+            <div class="hero__content">
+                <h1 class="hero__title">
+                    @_Banner.BannerTitle
+                    @*  Lorem ipsum dolor sit amet consectetur
+                    <span>vitae lectus ultricies risus.</span> *@
+                </h1>
+
+                <h3 class="hero__subtitle">
+                    @_Banner.BannerSubTitle
+                    @* Lorem ipsum dolor sit amet consectetur *@
+                </h3>
+
+                <p class="hero__text">
+                    @_Banner.BannerText
+                    @*  Lorem ipsum dolor sit amet consectetur. Vitae lectus ultricies
+                    risus varius enim euismod. Vitae in tempor euismod proin arcu
+                    condimentum. Lorem ipsum dolor sit amet consectetur. Vitae lectus
+                    ultricies risus varius enim euismod. Vitae in tempor euismod proin
+                    arcu condimentum. *@
+                </p>
+
+                <div class="hero__cta">
+                    <button type="button"
+                    class="dnn-btn dnn-btn__primary dnn-btn__primary--hero">
+                        Primary
+                    </button>
+                    <button type="button"
+                    class="dnn-btn dnn-btn__secondary dnn-btn__secondary--hero">
+                        Secondary
+                    </button>
+                </div>
+            </div>
+            <div class="hero__img">
+                <img src="@_Banner.BannerUrl" />
+                @* <img src="/Themes/RLTechnologies.Theme.HealthCare/img/hero-img.png" *@
+                alt="Medicine" />
+            </div>
+        </div>
+    </section>
+}
+@code {
+    public override string RenderMode => RenderModes.Static;
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" },
+        new Resource { ResourceType = ResourceType.Script, Url = ModulePath() + "Module.js" }
+    };
+
+    Banner _Banner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _Banner = await BannerService.GetByModuleAsync(ModuleState.ModuleId);
+            if (_Banner == null)
+            {
+                _Banner = new Banner
+                    {
+                        Name = "Banner Name",
+                        BannerTitle = "Banner Title",
+                        BannerSubTitle = "Banner Sub-title",
+                        BannerUrl = "Banner Url",
+                        BannerText = "Banner Text"
+                    };
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading Banner {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    // private async Task Delete(Banner Banner)
+    // {
+    //     try
+    //     {
+    //         await BannerService.DeleteBannerAsync(Banner.BannerId, ModuleState.ModuleId);
+    //         await logger.LogInformation("Banner Deleted {Banner}", Banner);
+    //         _Banners = await BannerService.GetBannersAsync(ModuleState.ModuleId);
+    //         StateHasChanged();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         await logger.LogError(ex, "Error Deleting Banner {Banner} {Error}", Banner, ex.Message);
+    //         AddModuleMessage(Localizer["Message.DeleteError"], MessageType.Error);
+    //     }
+    // }
+}

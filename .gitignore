@@ -1,0 +1,12 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Client/obj
+/Client/bin
+/Package/bin
+/Package/obj
+/Server/bin
+/Server/obj
+/Shared/bin
+/Shared/obj
